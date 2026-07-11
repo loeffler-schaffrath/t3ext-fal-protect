@@ -6,6 +6,7 @@ services:
 
   Causal\FalProtect\:
     resource: '../Classes/*'
+    exclude: '../Classes/Stream/*'
 
   Causal\FalProtect\EventListener\CoreImagingEventListener:
     tags:

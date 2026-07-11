@@ -18,6 +18,7 @@ namespace Causal\FalProtect\Middleware;
 
 use Causal\FalProtect\Event\SecurityCheckEvent;
 use Causal\FalProtect\Stream\FileStream;
+use Causal\FalProtect\Stream\LegacyFileStream;
 use Causal\FalProtect\Utility\AccessSecurity;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -55,6 +56,8 @@ class FileMiddleware implements MiddlewareInterface, LoggerAwareInterface
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
+        $typo3Version = (new Typo3Version())->getMajorVersion();
+
         // Respect encoded file names like "sonderzeichenäöü.png" with configurations like [SYS][systemLocale] = "de_DE.UTF8" && [SYS][UTF8filesystem] = "true"
         $target = urldecode($request->getUri()->getPath());
 
@@ -62,7 +65,7 @@ class FileMiddleware implements MiddlewareInterface, LoggerAwareInterface
         // Filter out what is obviously the root page or an non-authorized file name
         if ($target !== '/' && $this->isValidTarget($target)) {
             try {
-                if ((new Typo3Version())->getMajorVersion() >= 14) {
+                if ($typo3Version >= 14) {
                     if (str_starts_with($target, '/fileadmin/')) {
                         $target = substr($target, strlen('/fileadmin'));
                         $storage = $this->storageRepository->findByUid(1);
@@ -119,7 +122,11 @@ class FileMiddleware implements MiddlewareInterface, LoggerAwareInterface
                 $headers['Pragma'] = 'no-cache';
             }
 
-            $stream = new FileStream($fileName);
+            if ($typo3Version >= 14) {
+                $stream = new FileStream($fileName);
+            } else {
+                $stream = new LegacyFileStream($fileName);
+            }
             return new Response($stream, 200, $headers);
         }
 
