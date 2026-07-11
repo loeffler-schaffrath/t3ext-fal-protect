@@ -19,6 +19,7 @@ namespace Causal\FalProtect\LinkHandling;
 use Causal\FalProtect\Utility\AccessSecurity;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Http\ApplicationType;
+use TYPO3\CMS\Core\Information\Typo3Version;
 use TYPO3\CMS\Core\LinkHandling\FileLinkHandler;
 use TYPO3\CMS\Core\Resource\Exception\FileDoesNotExistException;
 use TYPO3\CMS\Core\Resource\FileInterface;
@@ -46,7 +47,11 @@ class ProtectedFileLinkHandler extends FileLinkHandler
                 // No check needed in Backend
                 return $file;
             }
-            $frontendTypoScriptConfigArray = $request->getAttribute('frontend.typoscript')?->getConfigArray();
+            if ((new Typo3Version())->getMajorVersion() >= 13) {
+                $frontendTypoScriptConfigArray = $request->getAttribute('frontend.typoscript')?->getConfigArray();
+            } else {
+                $frontendTypoScriptConfigArray = $request->getAttribute('frontend.controller')->tmpl->setup['config.'] ?? [];
+            }
             if ((bool)($frontendTypoScriptConfigArray['typolinkLinkAccessRestrictedPages'] ?? false)) {
                 return $file;
             }
